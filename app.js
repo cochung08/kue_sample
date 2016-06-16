@@ -34,6 +34,126 @@ var fs = require('fs');
 
 
 
+
+
+var MongoClient = require('mongodb').MongoClient;
+var assert = require('assert');
+
+
+
+var url = 'mongodb://localhost:27017/u24_segmentation';
+MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+  console.log("Connected correctly to server.");
+  db.close();
+});
+
+
+
+
+
+var find_heat_map_by_jobid = function(db, job_id,callback) {
+
+
+
+ 
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.post('/api/get_heat_map_result', function(req, res) {
+
+
+var data_body = req.body;
+
+console.log(data_body);
+
+var key = 'jobid'
+
+
+    var  job_id = data_body[key];
+console.log(job_id);
+
+
+
+
+MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+
+
+
+
+
+
+
+    var cursor =db.collection('ad_hoc_results').find(  {   "job_id":  job_id }      );
+
+   cursor.toArray(function (err, results) {
+
+   	 db.close();
+
+	    if (!err) {
+	    	console.log(results)
+	    	res.send('results: '+results);
+    
+    }
+});
+
+
+   
+
+
+
+
+
+
+
+
+});
+
+
+
+
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 queue.on( 'error', function( err ) {
   console.log( 'Oops... ', err );
    console.log( 'Oops... ', err );
@@ -161,7 +281,7 @@ var data_body = req.body;
 
 console.log(data_body);
 
-var params_array = ['algos','caseids','metric','input','output','result_exe_id']
+var params_array = ['uid','algos','caseids','metric','input','output','result_exe_id']
 
 
 // var params_array = ['caseids','metric','input','output','result_exe_id']
