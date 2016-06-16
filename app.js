@@ -317,7 +317,69 @@ var job_id;
 }).save( function(){
     job_id = job.id ;
     console.log("unique_job_id: "+job_id)
-    res.send('job_id: '+job_id);
+
+
+
+
+
+
+ 
+
+
+
+
+
+    res.send('job_id: '+unique_title);
+});
+
+
+
+job.on('complete', function(result){
+  // console.log('Job completed with data ', result);
+
+
+
+MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+ updateStatusByJobId (db, 'complete',unique_title, function() {
+      db.close();
+  });
+});
+
+
+
+}).on('failed attempt', function(errorMessage, doneAttempts){
+  console.log('Job failed');
+
+}).on('start', function(errorMessage, doneAttempts){
+  console.log('Job started');
+
+
+MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+ updateStatusByJobId (db, 'start',unique_title, function() {
+      db.close();
+  });
+});
+
+
+
+}).on('enqueue', function(result){
+
+	console.log('enqueue12');
+
+	MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+  insertStatusByJobId (db,"enqueue", unique_title, function() {
+      db.close();
+  });
+});
+
+  
+
+}).on('progress', function(progress, data){
+  // console.log('\r  job #' + job.id + ' ' + progress + '% complete with data ', data );
+console.log("ssssssssss")
 });
 
 
@@ -325,11 +387,13 @@ var job_id;
 
 
 
+
+
 });
 
 
 
-var server = app.listen(8099, function () {
+var server = app.listen(8299, function () {
 
   var host = server.address().address
   var port = server.address().port
@@ -345,8 +409,42 @@ var server = app.listen(8099, function () {
 
 
 
+
+
+
 // ssssssssssssssssssss
 
 
 
 
+var insertStatusByJobId = function(db,status, jobid,callback) {
+   db.collection('ad_hoc_results').insertOne( {
+      "jobid" : jobid,
+      "status" :status
+      
+    
+   }, function(err, result) {
+    assert.equal(err, null);
+    console.log("Inserted a document into the restaurants collection.");
+    callback();
+  });
+
+
+
+
+}
+
+
+
+
+var updateStatusByJobId = function(db,status,jobid, callback) {
+   db.collection('ad_hoc_results').updateOne(
+      {"jobid" : jobid },
+      {
+        $set: {  "status" :status },
+        $currentDate: { "lastModified": true }
+      }, function(err, results) {
+      console.log(results);
+      callback();
+   });
+};
