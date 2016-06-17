@@ -44,7 +44,7 @@ var assert = require('assert');
 var url = 'mongodb://localhost:27017/u24_segmentation';
 MongoClient.connect(url, function(err, db) {
   assert.equal(null, err);
-  console.log("Connected correctly to server.");
+  console.log("MOngo Connected correctly to server.");
   db.close();
 });
 
@@ -61,19 +61,6 @@ var find_heat_map_by_jobid = function(db, job_id,callback) {
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -101,18 +88,24 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-
-
-
     var cursor =db.collection('ad_hoc_results').find(  {   "job_id":  job_id }      );
 
    cursor.toArray(function (err, results) {
 
    	 db.close();
 
+
+   	 var result_json = {}
+
+
+   	 for(var i=0;i< results.length; i++)
+   	 {
+   	 	result_json[i] =   results[i]
+   	 }
+
 	    if (!err) {
-	    	console.log(results)
-	    	res.send('results: '+results);
+	    	console.log(result_json)
+	    	res.send('results: '+JSON.stringify (results));
     
     }
 });
@@ -122,11 +115,6 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-
-
-
-
-
 });
 
 
@@ -134,19 +122,6 @@ MongoClient.connect(url, function(err, db) {
 
 
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -185,10 +160,7 @@ var spark_path = "/home/cochung/spark_full" ;
   console.log('stdout: ' + stdout);
   console.log('!!!!!!!!!!!!!!: ');
   console.log('stderr: ' + stderr);
- //   var err = new Error( stderr);
- 
- // console.log("done error");
- // console.log(  err   );
+
 
 var output = fs.readFileSync(job_file).toString().split("\n");
 
@@ -216,53 +188,10 @@ var status = output[len-2];
 
      }
 
-
-
-
-
-   
-
-
-
-
-// if (error) {
-//    console.error("error:   "+ error);
-//     console.error(`exec error: ${error}`);
-//     done(error);
-//   }
-
-//   else
-//   {
-//     console.log("no error");
-//     done();
-//   }
   
-
-
-
-
-
-
-
-
-
-    
   });
 
 
-
- // var domain = require('domain').create();
- //  domain.on('error', function(err){
- //    done(err);
- //  });
- //  domain.run(function(){ 
-
- //    exec(command1+ cmd_params+log_cmd,function(error, stdout, stderr){
- //    if (stdout.length > 0) console.log('stdout: ' + stdout);
- //    if (stderr.length > 0) console.log('stderr: ' + stderr);
- //    done();
- //  });
- //  });
 
 
 
@@ -323,28 +252,106 @@ var job_id;
 
 
 
- 
-
-
-
-
-
     res.send('job_id: '+unique_title);
 });
+
+
+
+
+
+
+var insert_status_with_jobid = function(status,jobid)
+{
+
+	MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+
+
+
+ db.collection('ad_hoc_results').insertOne( {
+      "jobid" : jobid,
+      "status" :status
+      
+    
+   }, function(err, result) {
+    assert.equal(err, null);
+    console.log("Inserted a document into the restaurants collection.");
+      db.close();
+  });
+
+
+
+
+
+
+});
+
+}
+
+
+
+
+
+
+
+
+
+var update_status_by_jobid = function(status,jobid)
+{
+
+	MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err);
+
+
+
+db.collection('ad_hoc_results').updateOne(
+      {"jobid" : jobid },
+      {
+        $set: {  "status" :status },
+        $currentDate: { "lastModified": true }
+      }, function(err, results) {
+      console.log("updated");
+      db.close();
+   });
+
+
+
+
+});
+
+}
+
+
+
+
+
+
+
+var updateStatusByJobId = function(db,status,jobid, callback) {
+   db.collection('ad_hoc_results').updateOne(
+      {"jobid" : jobid },
+      {
+        $set: {  "status" :status },
+        $currentDate: { "lastModified": true }
+      }, function(err, results) {
+      console.log(results);
+      callback();
+   });
+};
+
+
+
+
+
+
 
 
 
 job.on('complete', function(result){
   // console.log('Job completed with data ', result);
 
+update_status_by_jobid('complete',unique_title)
 
-
-MongoClient.connect(url, function(err, db) {
-  assert.equal(null, err);
- updateStatusByJobId (db, 'complete',unique_title, function() {
-      db.close();
-  });
-});
 
 
 
@@ -355,12 +362,8 @@ MongoClient.connect(url, function(err, db) {
   console.log('Job started');
 
 
-MongoClient.connect(url, function(err, db) {
-  assert.equal(null, err);
- updateStatusByJobId (db, 'start',unique_title, function() {
-      db.close();
-  });
-});
+
+update_status_by_jobid('start',unique_title)
 
 
 
@@ -368,12 +371,8 @@ MongoClient.connect(url, function(err, db) {
 
 	console.log('enqueue12');
 
-	MongoClient.connect(url, function(err, db) {
-  assert.equal(null, err);
-  insertStatusByJobId (db,"enqueue", unique_title, function() {
-      db.close();
-  });
-});
+insert_status_with_jobid('enqueue',unique_title)
+// update_status_by_jobid('enqueue',unique_title)
 
   
 
@@ -393,7 +392,7 @@ console.log("ssssssssss")
 
 
 
-var server = app.listen(8299, function () {
+var server = app.listen(8399, function () {
 
   var host = server.address().address
   var port = server.address().port
