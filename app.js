@@ -2,6 +2,10 @@
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
+var multiparty = require('multiparty');
+
+
+
 var fs = require("fs");
 
 var uuid = require('node-uuid');
@@ -86,17 +90,11 @@ MongoClient.connect(url, function(err, db) {
   assert.equal(null, err);
 
 
-
-
     var cursor =db.collection('ad_hoc_results').find(  {   "job_id":  job_id }      );
-
    cursor.toArray(function (err, results) {
-
    	 db.close();
 
-
    	 var result_json = {}
-
 
    	 for(var i=0;i< results.length; i++)
    	 {
@@ -111,18 +109,51 @@ MongoClient.connect(url, function(err, db) {
 });
 
 
+});
+
+
+
+});
+
+
+
+
+app.post('/api/upload', function(req, res) {
+
+
+
+
+
+    // var  files = req.files.image;
    
+console.log("sdasd")
+
+ var form = new multiparty.Form();
+ 
+    form.parse(req, function(err, fields, files) {
+       console.log(files.image);
+      var ele =  files.image
+       var tmp_path = ele[0].path
+
+       console.log(tmp_path)
+
+       var obj = fs.readFileSync(tmp_path ,'utf8');
+          console.log(obj);
+
+
+
+    });
+
+    // form.on('field', function(name, val){
+    //      console.log(val);
+    //      });
+
+
+
 
 
 
 });
-
-
-
-
-
-});
-
 
 
 
@@ -392,7 +423,7 @@ console.log("ssssssssss")
 
 
 
-var server = app.listen(8399, function () {
+var server = app.listen(8591, function () {
 
   var host = server.address().address
   var port = server.address().port
