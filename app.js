@@ -141,7 +141,14 @@ console.log("sdasd")
           console.log(obj);
 
 
+var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection results --file " + tmp_path
 
+
+exec(command1,function(error, stdout, stderr){
+
+  });
+
+ res.send('xxx '+"unique_title");
     });
 
     // form.on('field', function(name, val){
@@ -423,7 +430,7 @@ console.log("ssssssssss")
 
 
 
-var server = app.listen(8591, function () {
+var server = app.listen(8595, function () {
 
   var host = server.address().address
   var port = server.address().port
