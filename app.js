@@ -1,17 +1,11 @@
-
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var multiparty = require('multiparty');
-
-
-
 var fs = require("fs");
-
 var uuid = require('node-uuid');
-
 var exec = require('child_process').exec;
-
+var kue = require('kue');
 
 
 
@@ -21,20 +15,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-var kue = require('kue');
+
 var queue = kue.createQueue({
   disableSearch: false
 });
-
-
-
-
-
-
-var fs = require('fs');
-
-
-
 
 
 
@@ -60,7 +44,7 @@ var find_heat_map_by_jobid = function(db, job_id,callback) {
 
 
 
- 
+
 
 
 
@@ -118,20 +102,14 @@ app.post('/api/get_heat_map_result', function(req, res) {
 
 
 
-app.post('/api/upload', function(req, res) {
+app.post('/api/upload_and_get_heatmap', function(req, res) {
 
+ 
 
-
-
-
-      // var  files = req.files.image;
-      
-      console.log("sdasd")
 
       var form = new multiparty.Form();
-      
+
       form.parse(req, function(err, fields, files) {
-       console.log(files.image);
        var ele =  files.image
        var tmp_path = ele[0].path
 
@@ -141,19 +119,42 @@ app.post('/api/upload', function(req, res) {
        console.log(obj);
 
 
-       var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection results --file " + tmp_path
+       var uni_job_id = uuid.v1();
+
+    var job = queue.create('upload_and_get_heatmap', {
+      title: uni_job_id ,
+      tmp_path: tmp_path,
+     
+
+    }).save( function(){ 
+      
+      
+      
+      console.log("unique_job_idaaa: "+uni_job_id)
 
 
-       exec(command1,function(error, stdout, stderr){
 
-       });
+      update_job_status(job)
 
-       res.send('xxx '+"uni_job_id");
+
+      res.send('job_id: '+uni_job_id);
+    });
+
+
+
+  
+
+
+       // var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection results --file " + tmp_path
+
+
+       // exec(command1,function(error, stdout, stderr){
+
+       // });
+
+       // res.send('uni_job_id '+uni_job_id);
      });
 
-      // form.on('field', function(name, val){
-      //      console.log(val);
-      //      });
 
 
 
@@ -164,16 +165,60 @@ app.post('/api/upload', function(req, res) {
 
 
 
+queue.process('upload_and_get_heatmap',4, function(job, done){
+
+
+
+
+       var tmp_path = job.data.tmp_path
+
+
+     var obj = fs.readFileSync(tmp_path ,'utf8');
+       console.log(obj);
+
+       console.log("bbbbbbbbbb");
+
+
+  console.log(tmp_path)
+
+       var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection test_col --file " + tmp_path
+
+
+       exec(command1,function(error, stdout, stderr){
+        //done();
+
+       });
+ 
+     });
+
+
+
+
+
+
 
 
 
 queue.on( 'error', function( err ) {
   console.log( 'Oops... ', err );
-  console.log( 'Oops... ', err );
-  console.log( 'Oops... ', err );
-  console.log( 'Oops... ', err );
-  console.log( 'Oops... ', err );
+
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -188,7 +233,7 @@ queue.process('heat_map',2, function(job, done){
 
 
   var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
-  
+
 
   var job_title = job.data.title
   var cmd_params = job.data.cmd_params
@@ -219,8 +264,8 @@ queue.process('heat_map',2, function(job, done){
       done()
 
         // console.log('stderr: ' + stderr);
-        
-        
+
+
       } 
       else
       {
@@ -230,7 +275,7 @@ queue.process('heat_map',2, function(job, done){
 
       }
 
-      
+
     });
 
 
@@ -279,12 +324,10 @@ app.post('/api/get_heat_map', function(req, res) {
 
     var uni_job_id = uuid.v1();
 
-    var job_id;
-
     var job = queue.create('heat_map', {
       title: uni_job_id
       , cmd_params:  cmd_params
-      
+
     }).save( function(){ 
       job.uni_job_id = uni_job_id
       job_id = job.id ;
@@ -336,7 +379,7 @@ var insert_status_with_jobid = function(status,jobid)
     db.collection('ad_hoc_results').insertOne( {
       "jobid" : jobid,
       "status" :status
-      
+
       
     }, function(err, result) {
       assert.equal(err, null);
@@ -403,7 +446,7 @@ var update_job_status= function(job)
   console.log("uni_job_id:   "+uni_job_id)
 
   job.on('complete', function(result){
-    // console.log('Job completed with data ', result);
+    console.log('Job completed ');
 
     update_status_by_jobid('complete',uni_job_id)
 
@@ -429,7 +472,7 @@ var update_job_status= function(job)
     insert_status_with_jobid('enqueue',uni_job_id)
   // update_status_by_jobid('enqueue',uni_job_id)
 
-  
+
 
 }).on('progress', function(progress, data){
     // console.log('\r  job #' + job.id + ' ' + progress + '% complete with data ', data );
@@ -467,8 +510,8 @@ var server = app.listen(8127, function () {
    db.collection('ad_hoc_results').insertOne( {
     "jobid" : jobid,
     "status" :status
-    
-    
+
+
   }, function(err, result) {
     assert.equal(err, null);
     console.log("Inserted a document into the restaurants collection.");
