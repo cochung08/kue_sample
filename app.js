@@ -148,7 +148,7 @@ exec(command1,function(error, stdout, stderr){
 
   });
 
- res.send('xxx '+"unique_title");
+ res.send('xxx '+"uni_job_id");
     });
 
     // form.on('field', function(name, val){
@@ -183,7 +183,11 @@ queue.process('heat_map',2, function(job, done){
 
 
 var spark_path = "/home/cochung/spark_full" ;
-  var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/spark-gis/target/uber-spark-gis-1.0.jar';
+
+
+
+
+  var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
   
 
   var job_title = job.data.title
@@ -273,24 +277,25 @@ console.log(cmd_params);
 
 
 
-var unique_title = uuid.v1();
+var uni_job_id = uuid.v1();
 
 var job_id;
 
  var job = queue.create('heat_map', {
-    title: unique_title
+    title: uni_job_id
   , cmd_params:  cmd_params
   
-}).save( function(){
+}).save( function(){ 
+  job.uni_job_id = uni_job_id
     job_id = job.id ;
-    console.log("unique_job_id: "+job_id)
+    console.log("unique_job_id: "+uni_job_id)
 
 
 
+update_job_status(job)
 
 
-
-    res.send('job_id: '+unique_title);
+    res.send('job_id: '+uni_job_id);
 });
 
 
@@ -298,10 +303,32 @@ var job_id;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+});
+
+
+
 var insert_status_with_jobid = function(status,jobid)
 {
 
-	MongoClient.connect(url, function(err, db) {
+  MongoClient.connect(url, function(err, db) {
   assert.equal(null, err);
 
 
@@ -318,10 +345,6 @@ var insert_status_with_jobid = function(status,jobid)
   });
 
 
-
-
-
-
 });
 
 }
@@ -332,14 +355,11 @@ var insert_status_with_jobid = function(status,jobid)
 
 
 
-
-
 var update_status_by_jobid = function(status,jobid)
 {
 
-	MongoClient.connect(url, function(err, db) {
+  MongoClient.connect(url, function(err, db) {
   assert.equal(null, err);
-
 
 
 db.collection('ad_hoc_results').updateOne(
@@ -351,8 +371,6 @@ db.collection('ad_hoc_results').updateOne(
       console.log("updated");
       db.close();
    });
-
-
 
 
 });
@@ -377,18 +395,17 @@ var updateStatusByJobId = function(db,status,jobid, callback) {
    });
 };
 
+var update_job_status= function(job)
+{
 
+var uni_job_id = job.uni_job_id ;
 
-
-
-
-
-
+console.log("uni_job_id:   "+uni_job_id)
 
 job.on('complete', function(result){
   // console.log('Job completed with data ', result);
 
-update_status_by_jobid('complete',unique_title)
+update_status_by_jobid('complete',uni_job_id)
 
 
 
@@ -401,16 +418,16 @@ update_status_by_jobid('complete',unique_title)
 
 
 
-update_status_by_jobid('start',unique_title)
+update_status_by_jobid('start',uni_job_id)
 
 
 
 }).on('enqueue', function(result){
 
-	console.log('enqueue12');
+  console.log('enqueue12');
 
-insert_status_with_jobid('enqueue',unique_title)
-// update_status_by_jobid('enqueue',unique_title)
+insert_status_with_jobid('enqueue',uni_job_id)
+// update_status_by_jobid('enqueue',uni_job_id)
 
   
 
@@ -418,19 +435,11 @@ insert_status_with_jobid('enqueue',unique_title)
   // console.log('\r  job #' + job.id + ' ' + progress + '% complete with data ', data );
 console.log("ssssssssss")
 });
+}
 
 
 
-
-
-
-
-
-});
-
-
-
-var server = app.listen(8595, function () {
+var server = app.listen(8127, function () {
 
   var host = server.address().address
   var port = server.address().port
