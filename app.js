@@ -40,15 +40,6 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-var find_heat_map_by_jobid = function(db, job_id,callback) {
-
-
-
-
-
-
-
-}
 
 
 
@@ -110,20 +101,56 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
       var form = new multiparty.Form();
 
       form.parse(req, function(err, fields, files) {
+
+     
+
+
+        var params_array = ['algos','caseids','metric','result_exe_id']
+
+
+  // var params_array = ['caseids','metric','input','output','result_exe_id']
+  var cmd_params ='';
+
+ var uni_job_id = uuid.v1();
+
+  for(var key of params_array)
+  {
+
+      // console.log("key: "+key)
+      // console.log('value: '+value);
+
+      var  value = fields[key];
+      var tmp = ' --'+key+' '+value;
+
+      cmd_params = cmd_params+tmp;
+    }
+
+    cmd_params = cmd_params +" --upload yes"+" --uid "+uni_job_id
+
+
+    console.log("upload_and_get_heatmap_cmd/;   "+cmd_params);
+
+
+
+
+
        var ele =  files.image
+
+       console.log(files)
        var tmp_path = ele[0].path
 
-       console.log(tmp_path)
+       // console.log(tmp_path)
 
-       var obj = fs.readFileSync(tmp_path ,'utf8');
-       console.log(obj);
+       // var obj = fs.readFileSync(tmp_path ,'utf8');
+       // console.log(obj);
 
 
-       var uni_job_id = uuid.v1();
+       
 
     var job = queue.create('upload_and_get_heatmap', {
       title: uni_job_id ,
       tmp_path: tmp_path,
+      cmd_params:cmd_params
      
 
     }).save( function(){ 
@@ -141,19 +168,46 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
     });
 
 
+     });
+
+
+
+
+
+
+
 
   
 
 
-       // var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection results --file " + tmp_path
+//////////////////////////////
 
 
-       // exec(command1,function(error, stdout, stderr){
 
-       // });
+    // var uni_job_id = uuid.v1();
 
-       // res.send('uni_job_id '+uni_job_id);
-     });
+    // var job = queue.create('upload_and_get_heatmap', {
+    //   title: uni_job_id ,
+     
+    //   req:req
+     
+
+    // }).save( function(){ 
+      
+      
+      
+    //   console.log("unique_job_idaaa: "+uni_job_id)
+
+
+
+    //   update_job_status(job)
+
+
+    //   res.send('job_id: '+uni_job_id);
+    // });
+
+
+
 
 
 
@@ -165,18 +219,18 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
 
 
 
-queue.process('upload_and_get_heatmap',4, function(job, done){
+queue.process('upload_and_get_heatmap',2, function(job, done){
 
-
-
+  
+ 
 
        var tmp_path = job.data.tmp_path
 
 
-     var obj = fs.readFileSync(tmp_path ,'utf8');
-       console.log(obj);
+     // var obj = fs.readFileSync(tmp_path ,'utf8');
+     //   console.log(obj);
 
-       console.log("bbbbbbbbbb");
+     //   console.log("bbbbbbbbbb");
 
 
   console.log(tmp_path)
@@ -185,9 +239,72 @@ queue.process('upload_and_get_heatmap',4, function(job, done){
 
 
        exec(command1,function(error, stdout, stderr){
-        //done();
+
+
+
+              fun_get_heat_map(job, done);
+
+
+
+        // done();
 
        });
+
+///////////////////////////////////////////////
+// var req = job.data.req
+
+// console.log(req)
+
+//     var form = new multiparty.Form();
+
+//       form.parse(req, function(err, fields, files) {
+//        var ele =  files.image
+//        var tmp_path = ele[0].path
+
+// console.log("sdasdad")
+//        console.log("path"+tmp_path)
+
+//        var obj = fs.readFileSync(tmp_path ,'utf8');
+//        console.log(obj);
+
+
+
+
+//      var obj = fs.readFileSync(tmp_path ,'utf8');
+//        console.log(obj);
+
+//        console.log("bbbbbbbbbb");
+
+
+//   console.log(tmp_path)
+
+//        var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection test_col --file " + tmp_path
+
+
+//        exec(command1,function(error, stdout, stderr){
+//         done();
+
+//        });
+
+
+   
+
+
+//      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  
      });
 
@@ -226,19 +343,75 @@ queue.on( 'error', function( err ) {
 queue.process('heat_map',2, function(job, done){
 
 
+fun_get_heat_map(job, done);
 
-  var spark_path = "/home/cochung/spark_full" ;
+// ./spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar --algos yi-algorithm-v1,yi-algorithm-v11 --caseids TCGA-02-0001-01Z-00-DX1 --metric jaccard --result_exe_id cheuk_121 --upload yes
+
+
+  // var spark_path = "/home/cochung/spark_full" ;
+  // var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
+
+
+  // var job_title = job.data.title
+  // var cmd_params = job.data.cmd_params
+
+  // var job_file =job_title+".txt"
+  // var log_cmd = " > "+job_file
+
+
+  // exec(command1+ cmd_params + log_cmd,function(error, stdout, stderr){
+
+  //   console.log('stdout: ' + stdout);
+  //   console.log('!!!!!!!!!!!!!!: ');
+  //   console.log('stderr: ' + stderr);
+
+
+  //   var output = fs.readFileSync(job_file).toString().split("\n");
+  //   var len = output.length
+  //   var status = output[len-2];
+
+
+
+  //   if (status =='completed')
+  //   {
+  //     console.log(  status        );
+  //     done()
+  //     } 
+  //     else
+  //     {
+  //       var err = new Error( stderr);
+  //       done(err);
+  //       console.log("done error");
+
+  //     }
+
+
+  //   });
 
 
 
 
+
+
+});
+
+
+
+var fun_get_heat_map = function (job,done)
+{
+
+
+   var spark_path = "/home/cochung/spark_full" ;
   var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
 
 
   var job_title = job.data.title
   var cmd_params = job.data.cmd_params
 
-  var job_file =job.id+".txt"
+  console.log("title: "+  job_title)
+  console.log("cmd_params: "+cmd_params)
+
+  var job_file =job_title+".txt"
   var log_cmd = " > "+job_file
 
 
@@ -250,10 +423,7 @@ queue.process('heat_map',2, function(job, done){
 
 
     var output = fs.readFileSync(job_file).toString().split("\n");
-
     var len = output.length
-
-
     var status = output[len-2];
 
 
@@ -262,10 +432,6 @@ queue.process('heat_map',2, function(job, done){
     {
       console.log(  status        );
       done()
-
-        // console.log('stderr: ' + stderr);
-
-
       } 
       else
       {
@@ -277,13 +443,7 @@ queue.process('heat_map',2, function(job, done){
 
 
     });
-
-
-
-
-
-
-});
+}
 
 
 
@@ -297,13 +457,13 @@ app.post('/api/get_heat_map', function(req, res) {
 
   console.log(data_body);
 
-  var params_array = ['uid','algos','caseids','metric','input','output','result_exe_id']
+  var params_array = ['algos','caseids','metric','input','output','result_exe_id']
 
 
   // var params_array = ['caseids','metric','input','output','result_exe_id']
   var cmd_params ='';
 
-
+var uni_job_id = uuid.v1();
 
   for(var key of params_array)
   {
@@ -317,22 +477,22 @@ app.post('/api/get_heat_map', function(req, res) {
       cmd_params = cmd_params+tmp;
     }
 
-    console.log(cmd_params);
+
+cmd_params = cmd_params +" --uid "+uni_job_id
+    console.log("get_heat_map: "+cmd_params);
 
 
 
 
-    var uni_job_id = uuid.v1();
+    
 
     var job = queue.create('heat_map', {
       title: uni_job_id
       , cmd_params:  cmd_params
 
     }).save( function(){ 
-      job.uni_job_id = uni_job_id
-      job_id = job.id ;
-      console.log("unique_job_id: "+uni_job_id)
-
+      
+    
 
 
       update_job_status(job)
@@ -441,7 +601,7 @@ var updateStatusByJobId = function(db,status,jobid, callback) {
 var update_job_status= function(job)
 {
 
-  var uni_job_id = job.uni_job_id ;
+  var uni_job_id = job.data.title ;
 
   console.log("uni_job_id:   "+uni_job_id)
 
