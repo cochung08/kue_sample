@@ -15,11 +15,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-
 var queue = kue.createQueue({
   disableSearch: false
 });
-
 
 
 
@@ -35,13 +33,6 @@ MongoClient.connect(url, function(err, db) {
   console.log("MOngo Connected correctly to server.");
   db.close();
 });
-
-
-
-
-
-
-
 
 
 
@@ -83,10 +74,7 @@ app.post('/api/get_heat_map_result', function(req, res) {
     }
   });
 
-
   });
-
-
 
 });
 
@@ -108,7 +96,6 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
         var params_array = ['algos','caseids','metric','result_exe_id']
 
 
-  // var params_array = ['caseids','metric','input','output','result_exe_id']
   var cmd_params ='';
 
  var uni_job_id = uuid.v1();
@@ -171,136 +158,19 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
      });
 
 
-
-
-
-
-
-
-  
-
-
-//////////////////////////////
-
-
-
-    // var uni_job_id = uuid.v1();
-
-    // var job = queue.create('upload_and_get_heatmap', {
-    //   title: uni_job_id ,
-     
-    //   req:req
-     
-
-    // }).save( function(){ 
-      
-      
-      
-    //   console.log("unique_job_idaaa: "+uni_job_id)
-
-
-
-    //   update_job_status(job)
-
-
-    //   res.send('job_id: '+uni_job_id);
-    // });
-
-
-
-
-
-
-
-
-
-
     });
 
 
 
 queue.process('upload_and_get_heatmap',2, function(job, done){
-
-  
- 
-
        var tmp_path = job.data.tmp_path
 
 
-     // var obj = fs.readFileSync(tmp_path ,'utf8');
-     //   console.log(obj);
-
-     //   console.log("bbbbbbbbbb");
-
-
-  console.log(tmp_path)
-
        var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection test_col --file " + tmp_path
-
-
        exec(command1,function(error, stdout, stderr){
-
-
-
               fun_get_heat_map(job, done);
 
-
-
-        // done();
-
        });
-
-///////////////////////////////////////////////
-// var req = job.data.req
-
-// console.log(req)
-
-//     var form = new multiparty.Form();
-
-//       form.parse(req, function(err, fields, files) {
-//        var ele =  files.image
-//        var tmp_path = ele[0].path
-
-// console.log("sdasdad")
-//        console.log("path"+tmp_path)
-
-//        var obj = fs.readFileSync(tmp_path ,'utf8');
-//        console.log(obj);
-
-
-
-
-//      var obj = fs.readFileSync(tmp_path ,'utf8');
-//        console.log(obj);
-
-//        console.log("bbbbbbbbbb");
-
-
-//   console.log(tmp_path)
-
-//        var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection test_col --file " + tmp_path
-
-
-//        exec(command1,function(error, stdout, stderr){
-//         done();
-
-//        });
-
-
-   
-
-
-//      });
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -324,73 +194,9 @@ queue.on( 'error', function( err ) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 queue.process('heat_map',2, function(job, done){
 
-
 fun_get_heat_map(job, done);
-
-// ./spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar --algos yi-algorithm-v1,yi-algorithm-v11 --caseids TCGA-02-0001-01Z-00-DX1 --metric jaccard --result_exe_id cheuk_121 --upload yes
-
-
-  // var spark_path = "/home/cochung/spark_full" ;
-  // var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
-
-
-  // var job_title = job.data.title
-  // var cmd_params = job.data.cmd_params
-
-  // var job_file =job_title+".txt"
-  // var log_cmd = " > "+job_file
-
-
-  // exec(command1+ cmd_params + log_cmd,function(error, stdout, stderr){
-
-  //   console.log('stdout: ' + stdout);
-  //   console.log('!!!!!!!!!!!!!!: ');
-  //   console.log('stderr: ' + stderr);
-
-
-  //   var output = fs.readFileSync(job_file).toString().split("\n");
-  //   var len = output.length
-  //   var status = output[len-2];
-
-
-
-  //   if (status =='completed')
-  //   {
-  //     console.log(  status        );
-  //     done()
-  //     } 
-  //     else
-  //     {
-  //       var err = new Error( stderr);
-  //       done(err);
-  //       console.log("done error");
-
-  //     }
-
-
-  //   });
-
-
-
-
 
 
 });
@@ -446,10 +252,6 @@ var fun_get_heat_map = function (job,done)
 }
 
 
-
-
-
-
 app.post('/api/get_heat_map', function(req, res) {
 
 
@@ -460,7 +262,6 @@ app.post('/api/get_heat_map', function(req, res) {
   var params_array = ['algos','caseids','metric','input','output','result_exe_id']
 
 
-  // var params_array = ['caseids','metric','input','output','result_exe_id']
   var cmd_params ='';
 
 var uni_job_id = uuid.v1();
@@ -468,8 +269,6 @@ var uni_job_id = uuid.v1();
   for(var key of params_array)
   {
 
-      // console.log("key: "+key)
-      // console.log('value: '+value);
 
       var  value = data_body[key];
       var tmp = ' --'+key+' '+value;
@@ -484,44 +283,14 @@ cmd_params = cmd_params +" --uid "+uni_job_id
 
 
 
-    
-
     var job = queue.create('heat_map', {
       title: uni_job_id
       , cmd_params:  cmd_params
 
     }).save( function(){ 
-      
-    
-
-
       update_job_status(job)
-
-
       res.send('job_id: '+uni_job_id);
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   });
@@ -554,10 +323,6 @@ var insert_status_with_jobid = function(status,jobid)
 
 
 
-
-
-
-
 var update_status_by_jobid = function(status,jobid)
 {
 
@@ -579,9 +344,6 @@ var update_status_by_jobid = function(status,jobid)
   });
 
 }
-
-
-
 
 
 
@@ -651,17 +413,6 @@ var server = app.listen(8127, function () {
 
 })
 
-
-
-
-
-
-
-
-
-
-
-  // ssssssssssssssssssss
 
 
 
