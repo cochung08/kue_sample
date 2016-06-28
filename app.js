@@ -7,7 +7,8 @@ var uuid = require('node-uuid');
 var exec = require('child_process').exec;
 var kue = require('kue');
 
-
+var COLLECTION1 = 'test_col'
+var COLLECTION2 = 'test_col'
 
 app.use(bodyParser.json()); 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -56,7 +57,7 @@ app.post('/api/get_heat_map_result', function(req, res) {
     assert.equal(null, err);
 
 
-    var cursor =db.collection('ad_hoc_results').find(  {   "job_id":  job_id }      );
+    var cursor =db.collection(COLLECTION1).find(  {   "jobId":  job_id }      );
     cursor.toArray(function (err, results) {
      db.close();
 
@@ -68,7 +69,9 @@ app.post('/api/get_heat_map_result', function(req, res) {
     }
 
     if (!err) {
-      console.log(result_json)
+
+      console.log("retrieved");
+      // console.log(result_json)
       res.send('results: '+JSON.stringify (results));
       
     }
@@ -166,7 +169,7 @@ queue.process('upload_and_get_heatmap',2, function(job, done){
        var tmp_path = job.data.tmp_path
 
 
-       var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection test_col --file " + tmp_path
+       var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection "+COLLECTION1+" --file " + tmp_path
        exec(command1,function(error, stdout, stderr){
               fun_get_heat_map(job, done);
 
@@ -208,7 +211,7 @@ var fun_get_heat_map = function (job,done)
 
 
    var spark_path = "/home/cochung/spark_full" ;
-  var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/repo/spark-gis/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
+  var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/spark-gis/cheuk/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
 
 
   var job_title = job.data.title
@@ -305,8 +308,8 @@ var insert_status_with_jobid = function(status,jobid)
 
 
 
-    db.collection('ad_hoc_results').insertOne( {
-      "jobid" : jobid,
+    db.collection(COLLECTION2).insertOne( {
+      "job_id" : jobid,
       "status" :status
 
       
@@ -330,8 +333,8 @@ var update_status_by_jobid = function(status,jobid)
     assert.equal(null, err);
 
 
-    db.collection('ad_hoc_results').updateOne(
-      {"jobid" : jobid },
+    db.collection(COLLECTION2).updateOne(
+      {"job_id" : jobid },
       {
         $set: {  "status" :status },
         $currentDate: { "lastModified": true }
@@ -349,8 +352,8 @@ var update_status_by_jobid = function(status,jobid)
 
 
 var updateStatusByJobId = function(db,status,jobid, callback) {
- db.collection('ad_hoc_results').updateOne(
-  {"jobid" : jobid },
+ db.collection(COLLECTION2).updateOne(
+  {"job_id" : jobid },
   {
     $set: {  "status" :status },
     $currentDate: { "lastModified": true }
@@ -418,8 +421,8 @@ var server = app.listen(8127, function () {
 
 
   var insertStatusByJobId = function(db,status, jobid,callback) {
-   db.collection('ad_hoc_results').insertOne( {
-    "jobid" : jobid,
+   db.collection(COLLECTION2).insertOne( {
+    "job_id" : jobid,
     "status" :status
 
 
@@ -438,8 +441,8 @@ var server = app.listen(8127, function () {
 
 
  var updateStatusByJobId = function(db,status,jobid, callback) {
-   db.collection('ad_hoc_results').updateOne(
-    {"jobid" : jobid },
+   db.collection(COLLECTION2).updateOne(
+    {"job_id" : jobid },
     {
       $set: {  "status" :status },
       $currentDate: { "lastModified": true }
