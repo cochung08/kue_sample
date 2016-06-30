@@ -2,7 +2,7 @@
   "name": "sample",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "heat_map_api.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
