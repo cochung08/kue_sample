@@ -24,9 +24,10 @@ var queue = kue.createQueue({
 
 
 var dbConfig = config.get('Setting.dbConfig');
-console.log(dbConfig)
+// console.log(dbConfig)
  
-
+var localConfig = config.get('Setting.local');
+// console.log(dbConfig)
 
 
 var HOST =  dbConfig.get('host')
@@ -38,6 +39,7 @@ var COLLECTION2 =  dbConfig.get('collection2');
 var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 
+var LOCAL_PORT = localConfig.get('port')
 
 var url = "mongodb://"+HOST+":"+PORT+"/"+DBNAME;
 // var url = 'mongodb://localhost:27017/u24_segmentation';
@@ -419,7 +421,7 @@ var update_job_status= function(job)
 
 
 
-var server = app.listen(8127, function () {
+var server = app.listen(LOCAL_PORT, function () {
 
   var host = server.address().address
   var port = server.address().port
