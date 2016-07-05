@@ -11,6 +11,24 @@ var config = require('config');
 // var COLLECTION1 = 'test_col'
 // var COLLECTION2 = 'test_col'
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.use(bodyParser.json()); 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -25,8 +43,10 @@ var queue = kue.createQueue({
 
 var dbConfig = config.get('Setting.dbConfig');
 // console.log(dbConfig)
- 
+
 var localConfig = config.get('Setting.local');
+
+var sparkConfig = config.get('Setting.spark');
 // console.log(dbConfig)
 
 
@@ -41,6 +61,8 @@ var assert = require('assert');
 
 var LOCAL_PORT = localConfig.get('port')
 
+var SPARK_CMD = sparkConfig.get('cmd1')
+
 var url = "mongodb://"+HOST+":"+PORT+"/"+DBNAME;
 // var url = 'mongodb://localhost:27017/u24_segmentation';
 MongoClient.connect(url, function(err, db) {
@@ -51,46 +73,71 @@ MongoClient.connect(url, function(err, db) {
 
 
 
+
+
+
+
+
+
+
+
 app.post('/api/get_heat_map_result', function(req, res) {
 
 
-  var data_body = req.body;
+  // var data_body = req.body;
 
-  console.log(data_body);
+  // console.log(data_body);
 
-  var key = 'jobid'
-
-
-  var  job_id = data_body[key];
-  console.log(job_id);
+  
+  // // var key = '_id'
 
 
+  // var  job_id = data_body[key];
+  // console.log(job_id);
 
 
-  MongoClient.connect(url, function(err, db) {
-    assert.equal(null, err);
+  var form = new multiparty.Form();
+
+  form.parse(req, function(err, fields, files) {
+    var key = 'jobId'
+    var job_id2 =  fields[key][0];
+    console.log(job_id2);
 
 
-    var cursor =db.collection(COLLECTION1).find(  {   "jobId":  job_id }      );
-    cursor.toArray(function (err, results) {
-     db.close();
+    MongoClient.connect(url, function(err, db) {
+      assert.equal(null, err);
 
-     var result_json = {}
+var www;
 
-     for(var i=0;i< results.length; i++)
-     {
-      result_json[i] =   results[i]
-    }
 
-    if (!err) {
 
-      console.log("retrieved");
+      var cursor =db.collection(COLLECTION1).find(  {   'jobId':  job_id2 }      );
+
+      var count = db.collection(COLLECTION1).find(  { 'jobId':  job_id2 }      ).count(function (e, count) {
+        console.log(count);
+      // return cb(e, count);
+    });
+
+      cursor.toArray(function (err, results) {
+       db.close();
+
+       var result_json = {}
+
+       for(var i=0;i< results.length; i++)
+       {
+        result_json[i] =   results[i]
+      }
+
+      if (!err) {
+
+        console.log("retrieved");
       // console.log(result_json)
       res.send('results: '+JSON.stringify (results));
       
     }
   });
 
+    });
   });
 
 });
@@ -100,25 +147,24 @@ app.post('/api/get_heat_map_result', function(req, res) {
 
 app.post('/api/upload_and_get_heatmap', function(req, res) {
 
- 
 
 
-      var form = new multiparty.Form();
+  var form = new multiparty.Form();
 
-      form.parse(req, function(err, fields, files) {
-
-     
+  form.parse(req, function(err, fields, files) {
 
 
-        var params_array = ['algos','caseids','metric','result_exe_id']
 
 
-  var cmd_params ='';
+    var params_array = ['algos','caseids','metric','result_exe_id']
 
- var uni_job_id = uuid.v1();
 
-  for(var key of params_array)
-  {
+    var cmd_params ='';
+
+    var uni_job_id = uuid.v1();
+
+    for(var key of params_array)
+    {
 
       // console.log("key: "+key)
       // console.log('value: '+value);
@@ -138,10 +184,10 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
 
 
 
-       var ele =  files.image
+    var ele =  files.image
 
-       console.log(files)
-       var tmp_path = ele[0].path
+    console.log(files)
+    var tmp_path = ele[0].path
 
        // console.log(tmp_path)
 
@@ -151,48 +197,51 @@ app.post('/api/upload_and_get_heatmap', function(req, res) {
 
        
 
-    var job = queue.create('upload_and_get_heatmap', {
-      title: uni_job_id ,
-      tmp_path: tmp_path,
-      cmd_params:cmd_params
-     
+       var job = queue.create('upload_and_get_heatmap', {
+        title: uni_job_id ,
+        tmp_path: tmp_path,
+        cmd_params:cmd_params
 
-    }).save( function(){ 
-      
-      
-      
-      console.log("unique_job_idaaa: "+uni_job_id)
+
+      }).save( function(){ 
 
 
 
-      update_job_status(job)
+        console.log("unique_job_idaaa: "+uni_job_id)
 
 
-      res.send('job_id: '+uni_job_id);
-    });
+
+        update_job_status(job)
 
 
-     });
+        res.send('job_id: '+uni_job_id);
+      });
 
 
     });
+
+
+});
 
 
 
 queue.process('upload_and_get_heatmap',2, function(job, done){
-       var tmp_path = job.data.tmp_path
+ var tmp_path = job.data.tmp_path
 
 
-       var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection "+COLLECTION1+" --file " + tmp_path
+ var command1 ="mongoimport --host "+HOST+":"+PORT+" --db "+DBNAME+" --collection "+COLLECTION1+" --file " + tmp_path
+
+
+       // var command1 ="mongoimport --host localhost:27017 --db u24_segmentation --collection "+COLLECTION1+" --file " + tmp_path
        exec(command1,function(error, stdout, stderr){
-              fun_get_heat_map(job, done);
+        fun_get_heat_map(job, done);
 
-       });
-
-
+      });
 
 
- 
+
+
+
      });
 
 
@@ -213,7 +262,7 @@ queue.on( 'error', function( err ) {
 
 queue.process('heat_map',2, function(job, done){
 
-fun_get_heat_map(job, done);
+  fun_get_heat_map(job, done);
 
 
 });
@@ -224,8 +273,8 @@ var fun_get_heat_map = function (job,done)
 {
 
 
-   var spark_path = "/home/cochung/spark_full" ;
-  var command1 = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/spark-gis/cheuk/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
+ var spark_path = "/home/cochung/spark_full" ;
+  // var SPARK_CMD = '/home/cochung/spark_full/spark-1.4.1/bin/spark-submit --class sparkgis.SparkGISMain /home/cochung/spark_full/spark-gis/cheuk/spark-gis-prod/spark-gis/target/uber-spark-gis-1.0.jar';
 
 
   var job_title = job.data.title
@@ -238,7 +287,7 @@ var fun_get_heat_map = function (job,done)
   var log_cmd = " > "+job_file
 
 
-  exec(command1+ cmd_params + log_cmd,function(error, stdout, stderr){
+  exec(SPARK_CMD+ cmd_params + log_cmd,function(error, stdout, stderr){
 
     console.log('stdout: ' + stdout);
     console.log('!!!!!!!!!!!!!!: ');
@@ -255,17 +304,17 @@ var fun_get_heat_map = function (job,done)
     {
       console.log(  status        );
       done()
-      } 
-      else
-      {
-        var err = new Error( stderr);
-        done(err);
-        console.log("done error");
+    } 
+    else
+    {
+      var err = new Error( stderr);
+      done(err);
+      console.log("done error");
 
-      }
+    }
 
 
-    });
+  });
 }
 
 
@@ -281,36 +330,36 @@ app.post('/api/get_heat_map', function(req, res) {
 
   var cmd_params ='';
 
-var uni_job_id = uuid.v1();
+  var uni_job_id = uuid.v1();
 
   for(var key of params_array)
   {
 
 
-      var  value = data_body[key];
-      var tmp = ' --'+key+' '+value;
+    var  value = data_body[key];
+    var tmp = ' --'+key+' '+value;
 
-      cmd_params = cmd_params+tmp;
-    }
-
-
-cmd_params = cmd_params +" --uid "+uni_job_id
-    console.log("get_heat_map: "+cmd_params);
+    cmd_params = cmd_params+tmp;
+  }
 
 
+  cmd_params = cmd_params +" --uid "+uni_job_id
+  console.log("get_heat_map: "+cmd_params);
 
 
-    var job = queue.create('heat_map', {
-      title: uni_job_id
-      , cmd_params:  cmd_params
-
-    }).save( function(){ 
-      update_job_status(job)
-      res.send('job_id: '+uni_job_id);
-    });
 
 
+  var job = queue.create('heat_map', {
+    title: uni_job_id
+    , cmd_params:  cmd_params
+
+  }).save( function(){ 
+    update_job_status(job)
+    res.send('job_id: '+uni_job_id);
   });
+
+
+});
 
 
 
@@ -434,34 +483,34 @@ var server = app.listen(LOCAL_PORT, function () {
 
 
 
-  var insertStatusByJobId = function(db,status, jobid,callback) {
-   db.collection(COLLECTION2).insertOne( {
-    "job_id" : jobid,
-    "status" :status
+var insertStatusByJobId = function(db,status, jobid,callback) {
+ db.collection(COLLECTION2).insertOne( {
+  "job_id" : jobid,
+  "status" :status
 
 
-  }, function(err, result) {
-    assert.equal(err, null);
-    console.log("Inserted a document into the restaurants collection.");
+}, function(err, result) {
+  assert.equal(err, null);
+  console.log("Inserted a document into the restaurants collection.");
+  callback();
+});
+
+
+
+
+}
+
+
+
+
+var updateStatusByJobId = function(db,status,jobid, callback) {
+ db.collection(COLLECTION2).updateOne(
+  {"job_id" : jobid },
+  {
+    $set: {  "status" :status },
+    $currentDate: { "lastModified": true }
+  }, function(err, results) {
+    console.log(results);
     callback();
   });
-
-
-
-
- }
-
-
-
-
- var updateStatusByJobId = function(db,status,jobid, callback) {
-   db.collection(COLLECTION2).updateOne(
-    {"job_id" : jobid },
-    {
-      $set: {  "status" :status },
-      $currentDate: { "lastModified": true }
-    }, function(err, results) {
-      console.log(results);
-      callback();
-    });
- };
+};
